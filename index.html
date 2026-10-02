@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Software project effort &amp; cost estimator</title>
+<meta name="description" content="Worksheet calculators for SLOC, function points, COCOMO and Delphi software estimation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E6E9EC; --sheet:#FFFFFF; --ink:#132030; --muted:#5C6B7A;
+    --rule:#CCD5DD; --rule-soft:#E4EAEF;
+    --accent:#14478F; --accent-soft:#E4EAF5;
+    --mark:#8A5300; --mark-soft:#FBF1DF;
+    --sans:"IBM Plex Sans",ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --serif:"Newsreader",ui-serif,Georgia,"Times New Roman",serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#10161C; --sheet:#161E26; --ink:#DEE5EB; --muted:#93A2B0;
+      --rule:#2C3845; --rule-soft:#222C36;
+      --accent:#8DB5EC; --accent-soft:#1B2633;
+      --mark:#E3AC68; --mark-soft:#26200F;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.5;
+    font-variant-numeric:tabular-nums;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:0 20px 72px}
+
+  header.top{padding:48px 0 28px; border-bottom:2px solid var(--ink)}
+  h1{
+    font-family:var(--serif); font-weight:400; font-size:clamp(2rem,5.2vw,3.1rem);
+    line-height:1.05; margin:0 0 .4em; letter-spacing:-.01em; max-width:14ch;
+  }
+  .lede{margin:0; max-width:62ch; color:var(--muted); font-size:1.0625rem}
+  .lede b{color:var(--ink); font-weight:500}
+  .topbar{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between}
+  button.ghost{
+    font:inherit; font-size:.875rem; color:var(--accent); background:none;
+    border:1px solid var(--rule); border-radius:2px; padding:7px 12px; cursor:pointer;
+  }
+  button.ghost:hover{border-color:var(--accent); background:var(--accent-soft)}
+
+  .cols{display:grid; grid-template-columns:200px 1fr; gap:40px; margin-top:34px; align-items:start}
+  nav.index{position:sticky; top:24px}
+  nav.index ol{list-style:none; margin:0; padding:0}
+  nav.index li{border-bottom:1px solid var(--rule-soft)}
+  nav.index button{
+    font:inherit; display:flex; gap:10px; width:100%; text-align:left; background:none;
+    border:0; border-left:2px solid transparent; padding:10px 8px; cursor:pointer; color:var(--muted);
+  }
+  nav.index button .no{font-family:var(--serif); color:var(--rule); font-size:.95rem}
+  nav.index button:hover{color:var(--ink)}
+  nav.index button[aria-selected="true"]{color:var(--ink); border-left-color:var(--accent); font-weight:500}
+  nav.index button[aria-selected="true"] .no{color:var(--accent)}
+
+  section[role="tabpanel"]{background:var(--sheet); border:1px solid var(--rule); padding:28px 28px 32px}
+  section[hidden]{display:none}
+  h2{font-family:var(--serif); font-weight:400; font-size:1.9rem; margin:0 0 .25em; line-height:1.15}
+  h3{font-size:.95rem; font-weight:600; margin:34px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--rule)}
+  .note{color:var(--muted); font-size:.9375rem; margin:0 0 22px; max-width:66ch}
+  .fine{color:var(--muted); font-size:.8125rem; margin:10px 0 0; max-width:66ch}
+
+  .fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px 22px}
+  .field{display:flex; flex-direction:column; gap:5px}
+  .field label{font-size:.8125rem; color:var(--muted)}
+  input[type=number], input[type=text], select{
+    font:inherit; font-variant-numeric:tabular-nums; color:var(--ink); background:var(--sheet);
+    border:1px solid var(--rule); border-bottom-width:2px; border-radius:2px; padding:8px 10px; width:100%;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible, .cell input:focus-visible{
+    outline:2px solid var(--accent); outline-offset:1px;
+  }
+  input[type=number]{text-align:right}
+  select{text-align:left}
+
+  .seg{display:inline-flex; border:1px solid var(--rule); border-radius:2px; overflow:hidden; flex-wrap:wrap}
+  .seg label{position:relative}
+  .seg input{position:absolute; opacity:0; inset:0; cursor:pointer}
+  .seg span{display:block; padding:7px 14px; font-size:.875rem; cursor:pointer; color:var(--muted)}
+  .seg input:checked + span{background:var(--accent); color:#fff}
+  .seg input:focus-visible + span{outline:2px solid var(--accent); outline-offset:-2px}
+
+  .scroll{overflow-x:auto; margin:0 -4px; padding:0 4px}
+  table{border-collapse:collapse; width:100%; font-size:.9375rem; min-width:520px}
+  th,td{padding:8px 10px; text-align:right; border-bottom:1px solid var(--rule-soft)}
+  th:first-child, td:first-child{text-align:left}
+  thead th{font-weight:500; font-size:.8125rem; color:var(--muted); border-bottom:1px solid var(--rule)}
+  td.w{color:var(--muted); width:62px}
+  th.w{width:62px}
+  .on{color:var(--ink); background:var(--accent-soft); font-weight:600}
+  thead th.on{color:var(--accent)}
+  td.tot{font-weight:600; width:86px}
+  tfoot td{border-top:1px solid var(--ink); border-bottom:0; font-weight:600; padding-top:12px}
+  table input[type=number]{width:84px; padding:5px 8px; border-bottom-width:1px}
+  table td.num{width:104px}
+
+  .gsc{display:grid; grid-template-columns:1fr auto; gap:2px 16px; align-items:center}
+  .gsc .q{font-size:.875rem; padding:5px 0; border-bottom:1px solid var(--rule-soft)}
+  .gsc .q b{font-weight:500}
+  .gsc .q i{font-style:normal; color:var(--muted)}
+  .scale{display:flex; gap:4px; padding:3px 0; border-bottom:1px solid var(--rule-soft)}
+  .scale label{position:relative; width:26px; height:26px}
+  .scale input{position:absolute; opacity:0; inset:0; margin:0; cursor:pointer}
+  .scale span{
+    display:grid; place-items:center; width:26px; height:26px; font-size:.75rem;
+    border:1px solid var(--rule); border-radius:50%; color:var(--muted); cursor:pointer;
+  }
+  .scale input:checked + span{background:var(--accent); border-color:var(--accent); color:#fff}
+  .scale input:focus-visible + span{outline:2px solid var(--accent); outline-offset:1px}
+  .scale-key{font-size:.75rem; color:var(--muted); margin:8px 0 0}
+
+  .out{margin-top:26px; border-top:2px solid var(--ink); padding-top:14px}
+  .line{display:flex; align-items:baseline; gap:4px; padding:7px 0 2px}
+  .line .k{font-size:.9375rem}
+  .line .lead{flex:1 1 auto; min-width:14px; border-bottom:1px dotted var(--rule); transform:translateY(-.28em)}
+  .line .v{font-weight:600; font-size:1.0625rem; white-space:nowrap}
+  .line.hero .v{color:var(--mark); font-size:1.5rem; font-family:var(--serif); font-weight:500}
+  .work{
+    font-family:var(--serif); font-style:italic; font-size:.9375rem; color:var(--muted);
+    margin:0 0 10px; padding-left:2px;
+  }
+  .work em{font-style:normal; color:var(--ink)}
+  .carry{
+    margin-top:22px; background:var(--mark-soft); border-left:2px solid var(--mark);
+    padding:12px 14px; font-size:.875rem;
+  }
+  .carry b{font-weight:600}
+  .rowbtns{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap}
+  button.row{
+    font:inherit; font-size:.875rem; background:none; color:var(--ink);
+    border:1px solid var(--rule); border-radius:2px; padding:6px 12px; cursor:pointer;
+  }
+  button.row:hover{border-color:var(--accent); color:var(--accent)}
+  button.del{border:0; color:var(--muted); font:inherit; background:none; cursor:pointer; padding:4px 8px}
+  button.del:hover{color:var(--mark)}
+  .verdict{font-weight:600}
+  .verdict.no{color:var(--mark)}
+
+  footer{margin-top:40px; color:var(--muted); font-size:.8125rem; max-width:66ch}
+
+  @media (max-width:820px){
+    .cols{grid-template-columns:1fr; gap:20px}
+    nav.index{position:static; border:1px solid var(--rule); background:var(--sheet)}
+    nav.index ol{display:flex; overflow-x:auto}
+    nav.index li{border-bottom:0; flex:0 0 auto}
+    nav.index button{border-left:0; border-bottom:2px solid transparent; padding:12px 14px; white-space:nowrap}
+    nav.index button[aria-selected="true"]{border-left-color:transparent; border-bottom-color:var(--accent)}
+    section[role="tabpanel"]{padding:22px 16px 26px}
+    .gsc{grid-template-columns:1fr}
+    .gsc .q{border-bottom:0; padding-bottom:0}
+    .scale{justify-content:flex-start; padding-bottom:8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="topbar">
+    <div>
+      <h1>Measuring effort for a software project</h1>
+      <p class="lede">Four estimation techniques from chapter&nbsp;4, as working calculators: <b>SLOC</b>, <b>function points</b>, <b>COCOMO</b> and <b>Delphi</b>. Every field starts on the worked example from the notes, so you can change one number at a time and watch the answer move.</p>
+    </div>
+    <button class="ghost" onclick="location.reload()">Reset to the notes' examples</button>
+  </div>
+</header>
+
+<div class="cols">
+  <nav class="index" aria-label="Estimation techniques">
+    <ol role="tablist">
+      <li><button role="tab" id="t-sloc"   aria-controls="p-sloc"   aria-selected="true"><span class="no">4.1</span> SLOC</button></li>
+      <li><button role="tab" id="t-fp"     aria-controls="p-fp"     aria-selected="false"><span class="no">4.2</span> Function points</button></li>
+      <li><button role="tab" id="t-cocomo" aria-controls="p-cocomo" aria-selected="false"><span class="no">4.3</span> COCOMO</button></li>
+      <li><button role="tab" id="t-delphi" aria-controls="p-delphi" aria-selected="false"><span class="no">4.4</span> Delphi</button></li>
+    </ol>
+  </nav>
+
+  <main>
+
+  <section role="tabpanel" id="p-sloc" aria-labelledby="t-sloc">
+    <h2>Source lines of code</h2>
+    <p class="note">Size the project in lines of code, then divide by how many lines one person writes in a month. Use it when the language and technology are fixed before the project starts.</p>
+
+    <div class="fields">
+      <div class="field"><label for="s-loc">Estimated size (LOC)</label><input type="number" id="s-loc" value="33200" min="0" step="100"></div>
+      <div class="field"><label for="s-prod">Productivity (LOC per person-month)</label><input type="number" id="s-prod" value="620" min="1" step="10"></div>
+      <div class="field"><label for="s-dev">Developers on the project</label><input type="number" id="s-dev" value="6" min="1" step="1"></div>
+      <div class="field"><label for="s-rate">Labour rate ($ per person-month)</label><input type="number" id="s-rate" value="800" min="0" step="50"></div>
+    </div>
+
+    <div class="out">
+      <div class="line hero"><span class="k">Total effort</span><span class="lead"></span><span class="v" id="s-eff">—</span></div>
+      <p class="work" id="s-eff-w"></p>
+
+      <div class="line"><span class="k">Duration with the whole team</span><span class="lead"></span><span class="v" id="s-dur">—</span></div>
+      <p class="work" id="s-dur-w"></p>
+
+      <div class="line"><span class="k">Total cost, from effort</span><span class="lead"></span><span class="v" id="s-cost1">—</span></div>
+      <p class="work" id="s-cost1-w"></p>
+
+      <div class="line"><span class="k">Total cost, from cost per LOC</span><span class="lead"></span><span class="v" id="s-cost2">—</span></div>
+      <p class="work" id="s-cost2-w"></p>
+    </div>
+    <p class="fine">Effort is rounded up to a whole person-month, the way the notes do it (53.54 becomes 54). The two cost routes differ by a few dollars because the second one rounds the cost per line.</p>
+  </section>
+
+  <section role="tabpanel" id="p-fp" aria-labelledby="t-fp" hidden>
+    <h2>Function points</h2>
+    <p class="note">Count what the software does for its user, weight each count by complexity, then adjust by the 14 general system characteristics. Independent of the language — until you convert the result back into lines of code.</p>
+
+    <h3>Count total</h3>
+    <div class="seg" role="radiogroup" aria-label="Weighting factor">
+      <label><input type="radio" name="fp-level" value="0"><span>Simple</span></label>
+      <label><input type="radio" name="fp-level" value="1" checked><span>Average</span></label>
+      <label><input type="radio" name="fp-level" value="2"><span>Complex</span></label>
+    </div>
+
+    <div class="scroll" style="margin-top:14px">
+      <table id="fp-table">
+        <thead>
+          <tr>
+            <th>Measurement parameter</th><th>Count</th>
+            <th class="w" data-col="0">Simple</th><th class="w" data-col="1">Average</th><th class="w" data-col="2">Complex</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot><tr><td colspan="5">Count total (CT)</td><td id="fp-ct">—</td></tr></tfoot>
+      </table>
+    </div>
+
+    <h3>Complexity weighting factors</h3>
+    <div class="gsc" id="fp-gsc"></div>
+    <p class="scale-key">0 no influence · 1 incidental · 2 moderate · 3 average · 4 significant · 5 critical</p>
+
+    <div class="fields" style="margin-top:24px">
+      <div class="field">
+        <label for="fp-lang">Language, for lines of code per function point</label>
+        <select id="fp-lang"></select>
+      </div>
+    </div>
+
+    <div class="out">
+      <div class="line"><span class="k">Total weighting factor (&Sigma;F<sub>i</sub>)</span><span class="lead"></span><span class="v" id="fp-twf">—</span></div>
+      <div class="line hero"><span class="k">Function points</span><span class="lead"></span><span class="v" id="fp-fp">—</span></div>
+      <p class="work" id="fp-fp-w"></p>
+      <div class="line"><span class="k">Lines of code</span><span class="lead"></span><span class="v" id="fp-loc">—</span></div>
+      <p class="work" id="fp-loc-w"></p>
+    </div>
+
+    <h3>Effort from function points</h3>
+    <div class="fields">
+      <div class="field"><label for="fe-fp">Size (FP)</label><input type="number" id="fe-fp" value="200" min="0" step="1"></div>
+      <div class="field"><label for="fe-hrs">Hours needed per FP</label><input type="number" id="fe-hrs" value="10" min="0" step="0.5"></div>
+      <div class="field"><label for="fe-day">Working hours per day</label><input type="number" id="fe-day" value="8" min="1" step="0.5"></div>
+      <div class="field"><label for="fe-mon">Working days per month</label><input type="number" id="fe-mon" value="20" min="1" step="1"></div>
+      <div class="field"><label for="fe-dev">Developers on the project</label><input type="number" id="fe-dev" value="2" min="1" step="1"></div>
+    </div>
+    <div class="out">
+      <div class="line"><span class="k">Effort in person-hours</span><span class="lead"></span><span class="v" id="fe-h">—</span></div>
+      <p class="work" id="fe-h-w"></p>
+      <div class="line"><span class="k">Effort in person-days</span><span class="lead"></span><span class="v" id="fe-d">—</span></div>
+      <p class="work" id="fe-d-w"></p>
+      <div class="line hero"><span class="k">Effort in person-months</span><span class="lead"></span><span class="v" id="fe-m">—</span></div>
+      <p class="work" id="fe-m-w"></p>
+      <div class="line"><span class="k">Calendar time for the team</span><span class="lead"></span><span class="v" id="fe-c">—</span></div>
+      <p class="work" id="fe-c-w"></p>
+    </div>
+    <div class="carry" id="fp-carry"></div>
+
+    <h3>Cost from function points</h3>
+    <div class="fields">
+      <div class="field"><label for="fc-fp">Size (FP)</label><input type="number" id="fc-fp" value="375" min="0" step="1"></div>
+      <div class="field"><label for="fc-prod">Productivity (FP per person-month)</label><input type="number" id="fc-prod" value="6.5" min="0.1" step="0.5"></div>
+      <div class="field"><label for="fc-rate">Labour rate ($ per person-month)</label><input type="number" id="fc-rate" value="800" min="0" step="50"></div>
+    </div>
+    <div class="out">
+      <div class="line"><span class="k">Cost per FP</span><span class="lead"></span><span class="v" id="fc-per">—</span></div>
+      <p class="work" id="fc-per-w"></p>
+      <div class="line hero"><span class="k">Total estimated cost</span><span class="lead"></span><span class="v" id="fc-cost">—</span></div>
+      <p class="work" id="fc-cost-w"></p>
+      <div class="line"><span class="k">Total estimated effort</span><span class="lead"></span><span class="v" id="fc-eff">—</span></div>
+      <p class="work" id="fc-eff-w"></p>
+    </div>
+
+    <h3>Defect density, after delivery</h3>
+    <div class="scroll">
+      <table id="dd-table">
+        <thead><tr><th>Project</th><th>Defects reported</th><th>Size in FP</th><th>Defects per FP</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="rowbtns"><button class="row" id="dd-add">Add a project</button></div>
+    <p class="fine" id="dd-best"></p>
+  </section>
+
+  <section role="tabpanel" id="p-cocomo" aria-labelledby="t-cocomo" hidden>
+    <h2>COCOMO</h2>
+    <p class="note">Effort grows faster than size, and how much faster depends on the kind of project. Basic COCOMO needs only the size; the intermediate model multiplies that first estimate by cost driver ratings.</p>
+
+    <h3>Basic</h3>
+    <div class="fields">
+      <div class="field">
+        <label for="cb-mode">Project type</label>
+        <select id="cb-mode">
+          <option value="organic" selected>Organic — small team, familiar ground (3.2, 1.05)</option>
+          <option value="semi">Semi-detached — mixed experience (3.0, 1.12)</option>
+          <option value="embedded">Embedded — tight hardware constraints (2.8, 1.20)</option>
+        </select>
+      </div>
+      <div class="field"><label for="cb-kloc">Size (KLOC)</label><input type="number" id="cb-kloc" value="4" min="0.1" step="0.5"></div>
+    </div>
+    <div class="out">
+      <div class="line hero"><span class="k">Effort</span><span class="lead"></span><span class="v" id="cb-e">—</span></div>
+      <p class="work" id="cb-e-w"></p>
+      <div class="line"><span class="k">Development time</span><span class="lead"></span><span class="v" id="cb-d">—</span></div>
+      <p class="work" id="cb-d-w"></p>
+      <div class="line"><span class="k">Average team size</span><span class="lead"></span><span class="v" id="cb-p">—</span></div>
+      <p class="work" id="cb-p-w"></p>
+    </div>
+    <p class="fine">The notes give the effort constants only. Development time uses the standard COCOMO duration equation D = 2.5 &times; E<sup>b</sup>, with b = 0.38 organic, 0.35 semi-detached, 0.32 embedded.</p>
+
+    <h3>Intermediate</h3>
+    <div class="fields">
+      <div class="field">
+        <label for="ci-mode">Project type</label>
+        <select id="ci-mode">
+          <option value="organic" selected>Organic (3.2, 1.05)</option>
+          <option value="semi">Semi-detached (3.0, 1.12)</option>
+          <option value="embedded">Embedded (2.8, 1.20)</option>
+        </select>
+      </div>
+      <div class="field"><label for="ci-kloc">Size (KLOC)</label><input type="number" id="ci-kloc" value="3" min="0.1" step="0.5"></div>
+    </div>
+    <p class="fine" style="margin-bottom:12px">Rate only the drivers that really affect your project. Leave the rest at 1.00 — that is the average rating, and it changes nothing. Typical values run from 0.9 to 1.4.</p>
+    <div class="scroll">
+      <table id="ci-table">
+        <thead><tr><th>Cost driver</th><th>Multiplying factor</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="out">
+      <div class="line"><span class="k">Initial effort (E<sub>i</sub>)</span><span class="lead"></span><span class="v" id="ci-ei">—</span></div>
+      <p class="work" id="ci-ei-w"></p>
+      <div class="line"><span class="k">Effort adjustment factor</span><span class="lead"></span><span class="v" id="ci-eaf">—</span></div>
+      <p class="work" id="ci-eaf-w"></p>
+      <div class="line hero"><span class="k">Adjusted effort</span><span class="lead"></span><span class="v" id="ci-e">—</span></div>
+      <p class="work" id="ci-e-w"></p>
+    </div>
+  </section>
+
+  <section role="tabpanel" id="p-delphi" aria-labelledby="t-delphi" hidden>
+    <h2>Delphi</h2>
+    <p class="note">Experts estimate every task on their own, with no discussion. The coordinator compares the highest and lowest figure for each task: anything that spreads further than the agreed limit goes back for another round.</p>
+
+    <div class="fields">
+      <div class="field" style="max-width:220px">
+        <label for="de-limit">Acceptable variance (%)</label>
+        <input type="number" id="de-limit" value="25" min="0" max="100" step="1">
+      </div>
+    </div>
+
+    <div class="scroll" style="margin-top:18px">
+      <table id="de-table">
+        <thead><tr><th>Task</th><th>Maximum (hours)</th><th>Minimum (hours)</th><th>Variance</th><th>Verdict</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="rowbtns"><button class="row" id="de-add">Add a task</button></div>
+    <div class="out">
+      <div class="line"><span class="k">Tasks accepted</span><span class="lead"></span><span class="v" id="de-acc">—</span></div>
+      <div class="line"><span class="k">Tasks going back to step 5</span><span class="lead"></span><span class="v" id="de-rej">—</span></div>
+      <p class="work" id="de-w"></p>
+    </div>
+    <p class="fine">Variance is the gap between the two estimates measured against the larger one: (maximum &minus; minimum) &divide; maximum. A task exactly on the limit is accepted; only estimates above it are rejected.</p>
+  </section>
+
+  </main>
+</div>
+
+<footer>
+  Built from the chapter 4 notes, <i>Measuring Effort for Software Project</i>. All of the arithmetic runs in your browser — nothing is sent anywhere.
+</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var num = function(id){ var v = parseFloat($(id).value); return isFinite(v) ? v : 0; };
+
+  function fmt(n, dp){
+    if(!isFinite(n)) return "—";
+    if(dp === undefined) dp = 2;
+    return n.toLocaleString("en-US", {minimumFractionDigits:0, maximumFractionDigits:dp});
+  }
+  function money(n){
+    if(!isFinite(n)) return "—";
+    return "$" + n.toLocaleString("en-US", {minimumFractionDigits:0, maximumFractionDigits:0});
+  }
+  function plural(n, word){ return fmt(n,0) + " " + word + (Math.abs(n) === 1 ? "" : "s"); }
+  function set(id, text){ var el = $(id); if(el) el.textContent = text; }
+  function work(id, html){ var el = $(id); if(el) el.innerHTML = html; }
+
+  var tabs = [].slice.call(document.querySelectorAll('[role="tab"]'));
+  function show(tab){
+    tabs.forEach(function(t){
+      var on = t === tab;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      $(t.getAttribute("aria-controls")).hidden = !on;
+    });
+  }
+  tabs.forEach(function(t){
+    t.addEventListener("click", function(){ show(t); });
+    t.addEventListener("keydown", function(e){
+      var i = tabs.indexOf(t), j = -1;
+      if(e.key === "ArrowDown" || e.key === "ArrowRight") j = (i + 1) % tabs.length;
+      if(e.key === "ArrowUp"   || e.key === "ArrowLeft")  j = (i - 1 + tabs.length) % tabs.length;
+      if(j >= 0){ e.preventDefault(); tabs[j].focus(); show(tabs[j]); }
+    });
+  });
+  show(tabs[0]);
+
+  function sloc(){
+    var loc = num("s-loc"), prod = num("s-prod"), dev = Math.max(1, num("s-dev")), rate = num("s-rate");
+    if(prod <= 0){
+      ["s-eff","s-dur","s-cost1","s-cost2"].forEach(function(id){ set(id, "—"); work(id + "-w", "Enter a productivity above zero."); });
+      return;
+    }
+
+    var exact = loc / prod, eff = Math.ceil(exact);
+    set("s-eff", fmt(eff, 0) + " person-months");
+    work("s-eff-w", "total LOC &divide; productivity = " + fmt(loc,0) + " &divide; " + fmt(prod,0) +
+         " = <em>" + fmt(exact, 2) + "</em>, rounded up to " + fmt(eff,0));
+
+    var dur = eff / dev;
+    set("s-dur", fmt(dur, 2) + " months");
+    work("s-dur-w", fmt(eff,0) + " person-months &divide; " + plural(dev, "developer"));
+
+    var c1 = eff * rate;
+    set("s-cost1", money(c1));
+    work("s-cost1-w", "effort &times; labour rate = " + fmt(eff,0) + " &times; " + money(rate));
+
+    var perLoc = rate / prod, perR = Math.round(perLoc * 10) / 10, c2 = loc * perR;
+    set("s-cost2", money(c2));
+    work("s-cost2-w", "cost per LOC = " + money(rate) + " &divide; " + fmt(prod,0) + " = $" + fmt(perLoc,2) +
+         " &asymp; $" + fmt(perR,2) + "; &times; " + fmt(loc,0) + " LOC");
+  }
+
+  var FP_ROWS = [
+    {name:"Number of user inputs",        w:[3,4,6],  v:13},
+    {name:"Number of user outputs",       w:[4,5,7],  v:10},
+    {name:"Number of user inquiries",     w:[3,4,6],  v:3},
+    {name:"Number of files",              w:[7,10,15],v:4},
+    {name:"Number of external interfaces",w:[5,7,10], v:2}
+  ];
+  var GSC = [
+    ["Operational ease","reliable backup and recovery",2],
+    ["Data communication","communicates with other applications",5],
+    ["Distributed functions","shares data between components",4],
+    ["Performance","response time and throughput are critical",5],
+    ["Heavily used configuration","runs on busy, shared resources",2],
+    ["Transaction rate","how often transactions run",3],
+    ["On-line data entry","data arrives interactively",4],
+    ["On-line update","master files updated on-line",2],
+    ["End-user efficiency","human factors and ease of use",3],
+    ["Complex processing","complicated internal logic",4],
+    ["Reusability","code is built to be reused elsewhere",5],
+    ["Installation ease","conversion and installation are in scope",2],
+    ["Multiple sites","many locations or organisations",3],
+    ["Facilitates change","easy to modify after delivery",4]
+  ];
+  var LANGS = [
+    ["Assembly language",320],["C",128],["COBOL / Fortran",105],["Pascal",90],["Ada",70],
+    ["C++",64],["Visual Basic",32],["Object-oriented languages",30],["Smalltalk",22],
+    ["Code generators (PowerBuilder)",15],["SQL / Oracle",12],["Spreadsheets",6],
+    ["Graphical languages (icons)",4]
+  ];
+
+  var tb = document.querySelector("#fp-table tbody");
+  FP_ROWS.forEach(function(r, i){
+    var tr = document.createElement("tr");
+    tr.innerHTML = '<td>' + r.name + '</td>' +
+      '<td class="num"><input type="number" id="fpc' + i + '" value="' + r.v + '" min="0" step="1" aria-label="' + r.name + '"></td>' +
+      '<td class="w" data-col="0">' + r.w[0] + '</td>' +
+      '<td class="w" data-col="1">' + r.w[1] + '</td>' +
+      '<td class="w" data-col="2">' + r.w[2] + '</td>' +
+      '<td class="tot" id="fpt' + i + '">—</td>';
+    tb.appendChild(tr);
+  });
+
+  var gw = $("fp-gsc");
+  GSC.forEach(function(g, i){
+    var q = document.createElement("div");
+    q.className = "q";
+    q.innerHTML = '<b>' + g[0] + '</b> &nbsp;<i>' + g[1] + '</i>';
+    gw.appendChild(q);
+    var s = document.createElement("div");
+    s.className = "scale";
+    s.setAttribute("role", "radiogroup");
+    s.setAttribute("aria-label", g[0]);
+    var html = "";
+    for(var v = 0; v <= 5; v++){
+      html += '<label><input type="radio" name="gsc' + i + '" value="' + v + '"' +
+              (v === g[2] ? " checked" : "") + ' aria-label="' + g[0] + ' = ' + v + '"><span>' + v + '</span></label>';
+    }
+    s.innerHTML = html;
+    gw.appendChild(s);
+  });
+
+  var sel = $("fp-lang");
+  LANGS.forEach(function(l){
+    var o = document.createElement("option");
+    o.value = l[1];
+    o.textContent = l[0] + " — " + l[1] + " LOC/FP";
+    if(l[0] === "SQL / Oracle") o.selected = true;
+    sel.appendChild(o);
+  });
+
+  function fpCalc(){
+    var lvl = parseInt(document.querySelector('input[name="fp-level"]:checked').value, 10);
+    document.querySelectorAll("#fp-table .w").forEach(function(c){
+      c.classList.toggle("on", parseInt(c.dataset.col, 10) === lvl);
+    });
+
+    var ct = 0, parts = [];
+    FP_ROWS.forEach(function(r, i){
+      var c = num("fpc" + i), t = c * r.w[lvl];
+      ct += t;
+      parts.push("(" + fmt(c,0) + "&times;" + r.w[lvl] + ")");
+      set("fpt" + i, fmt(t, 0));
+    });
+    set("fp-ct", fmt(ct, 0));
+
+    var twf = 0;
+    for(var i = 0; i < GSC.length; i++){
+      twf += parseInt(document.querySelector('input[name="gsc' + i + '"]:checked').value, 10);
+    }
+    set("fp-twf", fmt(twf, 0));
+
+    var factor = 0.65 + 0.01 * twf;
+    var fp = ct * factor, fpR = Math.round(fp);
+    set("fp-fp", fmt(fpR, 0) + " FP");
+    work("fp-fp-w", "CT &times; (0.65 + 0.01 &times; &Sigma;F<sub>i</sub>) = " + fmt(ct,0) + " &times; (0.65 + 0.01 &times; " +
+         fmt(twf,0) + ") = " + fmt(ct,0) + " &times; " + fmt(factor,2) + " = <em>" + fmt(fp,2) + "</em>" +
+         "<br>CT = " + parts.join(" + "));
+
+    var avc = parseFloat(sel.value), loc = fpR * avc;
+    set("fp-loc", fmt(loc, 0) + " LOC");
+    work("fp-loc-w", "FP &times; LOC per FP = " + fmt(fpR,0) + " &times; " + fmt(avc,0) +
+         " &nbsp;(" + sel.options[sel.selectedIndex].textContent.split(" — ")[0] + ")");
+
+    $("fp-carry").innerHTML = "Carrying this size across: <b>" + fmt(fpR,0) + " FP</b> or <b>" + fmt(loc,0) +
+      " LOC</b>. Type it into the fields above to cost it, or into the SLOC and COCOMO tabs to compare what each technique predicts.";
+  }
+
+  function fpEffort(){
+    var fp = num("fe-fp"), hrs = num("fe-hrs"), day = Math.max(0.1, num("fe-day")),
+        mon = Math.max(1, num("fe-mon")), dev = Math.max(1, num("fe-dev"));
+    var ph = fp * hrs, pd = ph / day, pm = pd / mon, cal = pm / dev;
+
+    set("fe-h", fmt(ph, 0) + " person-hours");
+    work("fe-h-w", fmt(fp,0) + " FP &times; " + fmt(hrs,2) + " hours/FP");
+    set("fe-d", fmt(pd, 2) + " person-days");
+    work("fe-d-w", fmt(ph,0) + " hours &divide; " + fmt(day,2) + " hours a day");
+    set("fe-m", fmt(pm, 2) + " person-months");
+    work("fe-m-w", fmt(pd,2) + " days &divide; " + fmt(mon,0) + " working days a month");
+    set("fe-c", fmt(cal, 2) + " months");
+    work("fe-c-w", fmt(pm,2) + " person-months &divide; " + plural(dev, "developer"));
+  }
+
+  function fpCost(){
+    var fp = num("fc-fp"), prod = num("fc-prod"), rate = num("fc-rate");
+    if(prod <= 0 || rate <= 0){ set("fc-per","—"); set("fc-cost","—"); set("fc-eff","—"); return; }
+    var per = rate / prod, perR = Math.round(per), cost = perR * fp, eff = cost / rate;
+
+    set("fc-per", money(per));
+    work("fc-per-w", "labour rate &divide; productivity = " + money(rate) + " &divide; " + fmt(prod,2) + " FP/pm &asymp; " + money(perR));
+    set("fc-cost", money(cost));
+    work("fc-cost-w", "cost per FP &times; size = " + money(perR) + " &times; " + fmt(fp,0) + " FP");
+    set("fc-eff", fmt(Math.ceil(eff), 0) + " person-months");
+    work("fc-eff-w", "total cost &divide; labour rate = " + money(cost) + " &divide; " + money(rate) +
+         " = <em>" + fmt(eff,2) + "</em>, rounded up");
+  }
+
+  var ddBody = document.querySelector("#dd-table tbody");
+  var ddSeed = [["Project 1",10,150],["Project 2",20,200],["Project 3",40,1000]];
+  function ddRow(name, d, s){
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><input type="text" value="' + name + '" aria-label="Project name"></td>' +
+      '<td class="num"><input type="number" value="' + d + '" min="0" step="1" aria-label="Defects reported"></td>' +
+      '<td class="num"><input type="number" value="' + s + '" min="0" step="1" aria-label="Size in FP"></td>' +
+      '<td class="tot">—</td>' +
+      '<td style="width:40px"><button class="del" aria-label="Remove row">&times;</button></td>';
+    tr.querySelector(".del").addEventListener("click", function(){ tr.remove(); calcAll(); });
+    ddBody.appendChild(tr);
+  }
+  ddSeed.forEach(function(r){ ddRow(r[0], r[1], r[2]); });
+  $("dd-add").addEventListener("click", function(){ ddRow("Project " + (ddBody.rows.length + 1), 0, 0); calcAll(); });
+
+  function defects(){
+    var best = null;
+    [].slice.call(ddBody.rows).forEach(function(tr){
+      var ins = tr.querySelectorAll("input");
+      var d = parseFloat(ins[1].value) || 0, s = parseFloat(ins[2].value) || 0;
+      var cell = tr.querySelector(".tot");
+      if(s > 0){
+        var dd = d / s;
+        cell.textContent = dd.toFixed(3) + " / FP";
+        if(best === null || dd < best.dd) best = {dd:dd, name:ins[0].value || "that project"};
+      } else {
+        cell.textContent = "—";
+      }
+    });
+    $("dd-best").textContent = best
+      ? best.name + " reports the fewest defects per function point (" + best.dd.toFixed(3) + "), so it is the highest quality of the projects listed."
+      : "Add a size in FP to compare quality across projects.";
+  }
+
+  var MODES = {
+    organic:  {c:3.2, k:1.05, b:0.38, label:"organic"},
+    semi:     {c:3.0, k:1.12, b:0.35, label:"semi-detached"},
+    embedded: {c:2.8, k:1.20, b:0.32, label:"embedded"}
+  };
+  var DRIVERS = [
+    ["Required software reliability (RSR)",1],
+    ["Database size (DBS)",1],
+    ["Software product complexity (SPC)",1.2],
+    ["Execution time constraint (ETC)",1.35],
+    ["Main storage constraint (MSC)",1],
+    ["Virtual machine volatility (VMV)",1],
+    ["Computer turnaround time (CTT)",1],
+    ["Analyst capability (AC)",0.95],
+    ["Applications experience (AE)",1],
+    ["Programmer capability (PC)",1],
+    ["Virtual machine experience (VME)",1],
+    ["Programming language experience (PLE)",1],
+    ["Modern programming practices (MPP)",1],
+    ["Use of software tools (TOOL)",1],
+    ["Required development schedule (RDS)",1]
+  ];
+  var cib = document.querySelector("#ci-table tbody");
+  DRIVERS.forEach(function(d, i){
+    var tr = document.createElement("tr");
+    tr.innerHTML = '<td>' + d[0] + '</td>' +
+      '<td class="num"><input type="number" id="cd' + i + '" value="' + d[1].toFixed(2) +
+      '" min="0.5" max="2" step="0.05" aria-label="' + d[0] + '"></td>';
+    cib.appendChild(tr);
+  });
+
+  function cocomoBasic(){
+    var m = MODES[$("cb-mode").value], kloc = num("cb-kloc");
+    if(kloc <= 0){ set("cb-e","—"); return; }
+    var pow = Math.pow(kloc, m.k), e = m.c * pow;
+    set("cb-e", fmt(Math.round(e), 0) + " person-months");
+    work("cb-e-w", "C &times; KLOC<sup>K</sup> = " + m.c + " &times; " + fmt(kloc,2) + "<sup>" + m.k + "</sup> = " +
+         m.c + " &times; " + fmt(pow,2) + " = <em>" + fmt(e,2) + "</em>");
+
+    var d = 2.5 * Math.pow(e, m.b);
+    set("cb-d", fmt(d, 2) + " months");
+    work("cb-d-w", "2.5 &times; E<sup>" + m.b + "</sup>, the " + m.label + " exponent");
+    set("cb-p", fmt(e / d, 2) + " people");
+    work("cb-p-w", "effort &divide; development time");
+  }
+
+  function cocomoInter(){
+    var m = MODES[$("ci-mode").value], kloc = num("ci-kloc");
+    if(kloc <= 0){ set("ci-e","—"); return; }
+    var pow = Math.pow(kloc, m.k), ei = m.c * pow;
+    set("ci-ei", fmt(ei, 2) + " person-months");
+    work("ci-ei-w", "C &times; KLOC<sup>K</sup> = " + m.c + " &times; " + fmt(kloc,2) + "<sup>" + m.k + "</sup>");
+
+    var eaf = 1, used = [];
+    DRIVERS.forEach(function(d, i){
+      var v = parseFloat($("cd" + i).value);
+      if(!isFinite(v) || v <= 0) v = 1;
+      eaf *= v;
+      if(Math.abs(v - 1) > 0.0001) used.push(fmt(v, 2));
+    });
+    set("ci-eaf", eaf.toFixed(2));
+    work("ci-eaf-w", used.length
+      ? "product of the rated drivers: " + used.join(" &times; ")
+      : "every driver is at the average rating of 1.00, so the estimate is unchanged");
+
+    var e = eaf * ei;
+    set("ci-e", fmt(e, 1) + " person-months");
+    work("ci-e-w", "EAF &times; E<sub>i</sub> = " + eaf.toFixed(2) + " &times; " + fmt(ei,2));
+  }
+
+  var deBody = document.querySelector("#de-table tbody");
+  var deSeed = [["Cost and benefit analysis",20,15],["High level design",50,30]];
+  function deRow(name, mx, mn){
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><input type="text" value="' + name + '" aria-label="Task name"></td>' +
+      '<td class="num"><input type="number" value="' + mx + '" min="0" step="1" aria-label="Maximum estimate"></td>' +
+      '<td class="num"><input type="number" value="' + mn + '" min="0" step="1" aria-label="Minimum estimate"></td>' +
+      '<td class="tot">—</td><td class="verdict">—</td>' +
+      '<td style="width:40px"><button class="del" aria-label="Remove row">&times;</button></td>';
+    tr.querySelector(".del").addEventListener("click", function(){ tr.remove(); calcAll(); });
+    deBody.appendChild(tr);
+  }
+  deSeed.forEach(function(r){ deRow(r[0], r[1], r[2]); });
+  $("de-add").addEventListener("click", function(){ deRow("New task", 0, 0); calcAll(); });
+
+  function delphi(){
+    var limit = num("de-limit"), acc = 0, rej = 0, names = [];
+    [].slice.call(deBody.rows).forEach(function(tr){
+      var ins = tr.querySelectorAll("input");
+      var name = ins[0].value || "that task";
+      var mx = parseFloat(ins[1].value) || 0, mn = parseFloat(ins[2].value) || 0;
+      var vcell = tr.querySelector(".tot"), jcell = tr.querySelector(".verdict");
+      if(mx <= 0){ vcell.textContent = "—"; jcell.textContent = "—"; jcell.className = "verdict"; return; }
+      if(mn > mx){
+        vcell.textContent = "—";
+        jcell.textContent = "Minimum is above the maximum";
+        jcell.className = "verdict no";
+        rej++; names.push(name);
+        return;
+      }
+      var v = (mx - mn) / mx * 100;
+      vcell.textContent = fmt(v, 1) + "%";
+      var ok = v <= limit;
+      jcell.textContent = ok ? "Accepted" : "Not accepted";
+      jcell.className = "verdict" + (ok ? "" : " no");
+      if(ok){ acc++; } else { rej++; names.push(name); }
+    });
+    set("de-acc", fmt(acc, 0));
+    set("de-rej", fmt(rej, 0));
+    work("de-w", rej
+      ? "Break down or combine " + names.join(", ") + ", then run another round of independent estimates."
+      : "Every task is inside the " + fmt(limit,0) + "% limit, so the estimates are final.");
+  }
+
+  function calcAll(){
+    sloc(); fpCalc(); fpEffort(); fpCost(); defects();
+    cocomoBasic(); cocomoInter(); delphi();
+  }
+  document.addEventListener("input", calcAll);
+  document.addEventListener("change", calcAll);
+  calcAll();
+})();
+</script>
+</body>
+</html>
